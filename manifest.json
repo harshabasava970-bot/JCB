@@ -1,0 +1,25 @@
+{
+  "name": "JCB Working",
+  "short_name": "JCB Working",
+  "description": "Daily work tracker for JCB operators",
+  "start_url": "/JCB/",
+  "scope": "/JCB/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F9C400",
+  "theme_color": "#F9C400",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
