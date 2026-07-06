@@ -1,0 +1,118 @@
+============================================================
+  JCB Working - Complete Deploy Guide (GitHub + Render)
+============================================================
+
+PART 1 — PUSH TO GITHUB
+============================================================
+
+STEP 1: Install Git (if not already installed)
+  → Download from: https://git-scm.com/download/windows
+  → Click the .exe file, keep clicking Next → Install
+  → Restart your PC after install
+
+STEP 2: Create GitHub Repository
+  → Go to: https://github.com/new
+  → Repository name: JCB
+  → Make it PUBLIC
+  → DO NOT check "Add README" or anything
+  → Click "Create repository"
+
+STEP 3: Open Command Prompt in the website folder
+  → Open File Explorer
+  → Go to: C:\Users\BUNNY\Desktop\jcb\website\
+  → Click the address bar at top
+  → Type: cmd
+  → Press Enter (Command Prompt opens in that folder)
+
+STEP 4: Run these commands ONE BY ONE:
+
+  git init
+  git branch -M main
+  git add .
+  git commit -m "JCB Working app"
+  git remote add origin https://github.com/harshabasava970-bot/JCB.git
+  git push -u origin main
+
+  → A browser will open asking you to login to GitHub
+  → Login → Authorize → Done!
+
+STEP 5: Verify
+  → Go to: https://github.com/harshabasava970-bot/JCB
+  → You should see all your files!
+
+============================================================
+PART 2 — DEPLOY ON RENDER (Free Hosting)
+============================================================
+
+STEP 1: Go to Render
+  → Open: https://render.com
+  → Click "Get Started for Free"
+  → Sign up using your GitHub account (click "Sign up with GitHub")
+
+STEP 2: Create New Static Site
+  → Click "New +" button (top right)
+  → Select "Static Site"
+
+STEP 3: Connect GitHub Repo
+  → Click "Connect GitHub"
+  → Authorize Render to access your GitHub
+  → Search for "JCB" 
+  → Click "Connect"
+
+STEP 4: Configure the Site
+  Fill in these exact values:
+  ┌─────────────────────────────────────┐
+  │ Name:             jcb-working       │
+  │ Branch:           main              │
+  │ Build Command:    (LEAVE EMPTY)     │
+  │ Publish Directory: .  (just a dot) │
+  └─────────────────────────────────────┘
+  
+  → Click "Create Static Site"
+
+STEP 5: Wait for Deploy (takes 1-2 minutes)
+  → Render will show "Deploy in progress..."
+  → When done it shows "Live" in green
+
+STEP 6: Get your live URL!
+  Your website will be at:
+  → https://jcb-working.onrender.com
+  OR
+  → https://jcb-working-xxxx.onrender.com
+
+  SHARE THIS LINK with anyone — they can use the app!
+
+============================================================
+PART 3 — ALTERNATIVE: GitHub Pages (Even Simpler)
+============================================================
+
+After pushing to GitHub (Part 1 done):
+
+STEP 1: Go to your repo
+  → https://github.com/harshabasava970-bot/JCB
+
+STEP 2: Click "Settings" tab
+
+STEP 3: Click "Pages" in left sidebar
+
+STEP 4: Under "Source" select:
+  → Branch: main
+  → Folder: / (root)
+  → Click Save
+
+STEP 5: Wait 1 minute
+  Your site will be live at:
+  → https://harshabasava970-bot.github.io/JCB
+
+  This is 100% FREE and never expires!
+
+============================================================
+QUICK SUMMARY — EASIEST PATH:
+============================================================
+
+1. Run PUSH_TO_GITHUB.bat (in this folder)
+2. Go to github.com/harshabasava970-bot/JCB → Settings → Pages
+3. Select main branch → Save
+4. Done! Live at: harshabasava970-bot.github.io/JCB
+
+============================================================
