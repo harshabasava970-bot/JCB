@@ -90,7 +90,7 @@ const SettingsPage = {
           <span class="material-icons-round" style="color:#2196f3">tag</span>
         </div>
         <div class="setting-info"><div class="setting-title">Version</div></div>
-        <span style="font-size:13px;font-weight:600">1.0.0</span>
+        <span style="font-size:13px;font-weight:600">2.0.0</span>
       </div>
       <div class="setting-item">
         <div class="setting-icon" style="background:rgba(76,175,80,.12)">
@@ -128,7 +128,6 @@ const SettingsPage = {
       if (!rate || rate <= 0) { App.showToast('Enter valid rate', 'error'); return; }
       Settings.set('hourlyRate', rate);
       App.showToast('Rate saved!', 'success');
-      // Re-render to update display
       SettingsPage.render(container);
     };
 
