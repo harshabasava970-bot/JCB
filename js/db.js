@@ -1,6 +1,6 @@
 // ── JCB Working - IndexedDB Database Layer ────────────────
-const DB_NAME = 'jcb_working_db';
-const DB_VERSION = 2;   // bumped: adds pauseSegments + loading fields
+const DB_NAME    = 'jcb_working_db';
+const DB_VERSION = 3;   // v3: separate loadingRecords store
 let db = null;
 
 function openDB() {
@@ -9,22 +9,31 @@ function openDB() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
 
     req.onupgradeneeded = e => {
-      const d = e.target.result;
-      // Works store (created in v1, unchanged in v2)
+      const d    = e.target.result;
+      const oldV = e.oldVersion;
+
+      // ── works store (v1) ──────────────────────────────
       if (!d.objectStoreNames.contains('works')) {
         const ws = d.createObjectStore('works', { keyPath: 'id', autoIncrement: true });
-        ws.createIndex('status', 'status');
-        ws.createIndex('date', 'date');
+        ws.createIndex('status',       'status');
+        ws.createIndex('date',         'date');
         ws.createIndex('customerName', 'customerName');
       }
-      // Customers store (unchanged)
+
+      // ── customers store (v1) ──────────────────────────
       if (!d.objectStoreNames.contains('customers')) {
         const cs = d.createObjectStore('customers', { keyPath: 'id', autoIncrement: true });
         cs.createIndex('mobile', 'mobileNumber', { unique: false });
-        cs.createIndex('name', 'name');
+        cs.createIndex('name',   'name');
       }
-      // v2: no schema change needed — pauseSegments & loading are just new
-      // fields stored as JSON arrays on existing work records.
+
+      // ── loadingRecords store (v3) ─────────────────────
+      if (!d.objectStoreNames.contains('loadingRecords')) {
+        const ls = d.createObjectStore('loadingRecords', { keyPath: 'id', autoIncrement: true });
+        ls.createIndex('date',          'date');
+        ls.createIndex('customerName',  'customerName');
+        ls.createIndex('paymentStatus', 'paymentStatus');
+      }
     };
 
     req.onsuccess = e => { db = e.target.result; resolve(db); };
@@ -32,7 +41,9 @@ function openDB() {
   });
 }
 
-// ── Works ────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// WORK RECORDS
+// ══════════════════════════════════════════════════════════
 async function addWork(work) {
   const d = await openDB();
   return new Promise((resolve, reject) => {
@@ -113,20 +124,35 @@ async function getWorksByCustomer(name, village) {
 }
 
 async function getDashboardStats() {
-  const works    = await getAllWorks();
+  const works     = await getAllWorks();
   const completed = works.filter(w => w.status === 'completed');
   const today      = new Date().toISOString().slice(0, 10);
   const monthStart = today.slice(0, 7) + '-01';
-  const todayWorks  = completed.filter(w => w.date === today);
-  const monthWorks  = completed.filter(w => w.date >= monthStart);
+  const todayW     = completed.filter(w => w.date === today);
+  const monthW     = completed.filter(w => w.date >= monthStart);
+
+  // Loading stats
+  const allLoading   = await getAllLoadingRecords();
+  const todayL       = allLoading.filter(r => r.date === today);
+  const monthL       = allLoading.filter(r => r.date >= monthStart);
+
   return {
-    todayJobs:       todayWorks.length,
-    todayEarnings:   todayWorks.reduce((s, w) => s + w.amount, 0),
-    monthlyJobs:     monthWorks.length,
-    monthlyEarnings: monthWorks.reduce((s, w) => s + w.amount, 0),
+    // Work
+    todayJobs:          todayW.length,
+    todayEarnings:      todayW.reduce((s, w) => s + w.amount, 0),
+    monthlyJobs:        monthW.length,
+    monthlyEarnings:    monthW.reduce((s, w) => s + w.amount, 0),
+    // Loading
+    todayLoadingCount:  todayL.length,
+    todayLoadingTrips:  todayL.reduce((s, r) => s + (r.totalTrips || 0), 0),
+    todayLoadingAmount: todayL.reduce((s, r) => s + (r.totalAmount || 0), 0),
+    monthLoadingCount:  monthL.length,
+    monthLoadingTrips:  monthL.reduce((s, r) => s + (r.totalTrips || 0), 0),
+    monthLoadingAmount: monthL.reduce((s, r) => s + (r.totalAmount || 0), 0),
   };
 }
 
+// Work-only report stats (no trip data)
 async function getReportStats(fromDate, toDate) {
   const works = await getCompletedWorks({ fromDate, toDate });
   return {
@@ -135,27 +161,137 @@ async function getReportStats(fromDate, toDate) {
     totalDiesel:   works.reduce((s, w) => s + (w.dieselExpense || 0), 0),
     totalProfit:   works.reduce((s, w) => s + (w.profit || 0), 0),
     totalMinutes:  works.reduce((s, w) => s + (w.workingMinutes || 0), 0),
-    // New in v2: total loading trips across all records
-    totalTrips:    works.reduce((s, w) => {
-      if (!Array.isArray(w.loading)) return s;
-      return s + w.loading.reduce((t, v) => t + (v.trips || 0), 0);
-    }, 0),
+    totalBreakMins:works.reduce((s, w) => s + (w.breakMinutes || 0), 0),
   };
 }
 
 async function getMonthlyChartData(year) {
-  const from = `${year}-01-01`, to = `${year}-12-31`;
+  const from  = `${year}-01-01`, to = `${year}-12-31`;
   const works = await getCompletedWorks({ fromDate: from, toDate: to });
   const months = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, earnings: 0, jobs: 0 }));
   works.forEach(w => {
     const m = parseInt(w.date.slice(5, 7)) - 1;
     months[m].earnings += w.amount;
-    months[m].jobs += 1;
+    months[m].jobs     += 1;
   });
   return months;
 }
 
-// ── Customers ─────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// LOADING RECORDS
+// ══════════════════════════════════════════════════════════
+async function addLoadingRecord(record) {
+  const d = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx  = d.transaction('loadingRecords', 'readwrite');
+    const req = tx.objectStore('loadingRecords').add(record);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function updateLoadingRecord(record) {
+  const d = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx  = d.transaction('loadingRecords', 'readwrite');
+    const req = tx.objectStore('loadingRecords').put(record);
+    req.onsuccess = () => resolve();
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function deleteLoadingRecord(id) {
+  const d = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx  = d.transaction('loadingRecords', 'readwrite');
+    const req = tx.objectStore('loadingRecords').delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function getLoadingRecordById(id) {
+  const d = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx  = d.transaction('loadingRecords', 'readonly');
+    const req = tx.objectStore('loadingRecords').get(id);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function getAllLoadingRecords() {
+  const d = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx  = d.transaction('loadingRecords', 'readonly');
+    const req = tx.objectStore('loadingRecords').getAll();
+    req.onsuccess = e => resolve(e.target.result.reverse());
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function getFilteredLoadingRecords(filter = {}) {
+  let records = await getAllLoadingRecords();
+  if (filter.search) {
+    const q = filter.search.toLowerCase();
+    records = records.filter(r =>
+      r.customerName.toLowerCase().includes(q) ||
+      r.village.toLowerCase().includes(q) ||
+      (r.customerMobile || '').includes(q) ||
+      (r.vehicles || []).some(v => v.vehicleNumber.toLowerCase().includes(q))
+    );
+  }
+  if (filter.payment && filter.payment !== 'All') {
+    records = records.filter(r => r.paymentStatus === filter.payment);
+  }
+  if (filter.fromDate) records = records.filter(r => r.date >= filter.fromDate);
+  if (filter.toDate)   records = records.filter(r => r.date <= filter.toDate);
+  return records;
+}
+
+// Loading report stats
+async function getLoadingReportStats(fromDate, toDate) {
+  const records = await getFilteredLoadingRecords({ fromDate, toDate });
+  const totalTrips  = records.reduce((s, r) => s + (r.totalTrips  || 0), 0);
+  const totalAmount = records.reduce((s, r) => s + (r.totalAmount || 0), 0);
+  const totalPaid   = records.reduce((s, r) => s + (r.paidAmount  || 0), 0);
+  const totalBalance= records.reduce((s, r) => s + (r.balanceDue  || 0), 0);
+
+  // Vehicle-type breakdown
+  const byType = {};
+  records.forEach(r => {
+    (r.vehicles || []).forEach(v => {
+      if (!byType[v.vehicleType]) byType[v.vehicleType] = { trips: 0, amount: 0 };
+      byType[v.vehicleType].trips  += v.trips || 0;
+      byType[v.vehicleType].amount += (v.trips || 0) * (v.amountPerTrip || 0);
+    });
+  });
+
+  return {
+    totalRecords: records.length,
+    totalTrips,
+    totalAmount,
+    totalPaid,
+    totalBalance,
+    byType,
+  };
+}
+
+async function getLoadingMonthlyChartData(year) {
+  const from    = `${year}-01-01`, to = `${year}-12-31`;
+  const records = await getFilteredLoadingRecords({ fromDate: from, toDate: to });
+  const months  = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, trips: 0, amount: 0 }));
+  records.forEach(r => {
+    const m = parseInt(r.date.slice(5, 7)) - 1;
+    months[m].trips  += r.totalTrips  || 0;
+    months[m].amount += r.totalAmount || 0;
+  });
+  return months;
+}
+
+// ══════════════════════════════════════════════════════════
+// CUSTOMERS
+// ══════════════════════════════════════════════════════════
 async function getAllCustomers() {
   const d = await openDB();
   return new Promise((resolve, reject) => {
@@ -221,12 +357,9 @@ async function upsertCustomer(work) {
   }
 }
 
-// ── Pause / Break helpers ─────────────────────────────────
-/**
- * Calculates total paused milliseconds from an array of pause segments.
- * Each segment: { pausedAt: ISO, resumedAt: ISO|null }
- * An open segment (resumedAt === null) means currently paused.
- */
+// ══════════════════════════════════════════════════════════
+// PAUSE / BREAK HELPERS
+// ══════════════════════════════════════════════════════════
 function calcTotalPausedMs(pauseSegments = []) {
   const now = Date.now();
   return pauseSegments.reduce((total, seg) => {
@@ -236,29 +369,25 @@ function calcTotalPausedMs(pauseSegments = []) {
   }, 0);
 }
 
-/**
- * Returns actual working minutes = total elapsed − total paused.
- */
 function calcActualWorkingMinutes(work) {
-  const start    = new Date(work.startTime).getTime();
-  const end      = work.endTime ? new Date(work.endTime).getTime() : Date.now();
+  const start     = new Date(work.startTime).getTime();
+  const end       = work.endTime ? new Date(work.endTime).getTime() : Date.now();
   const elapsedMs = end - start;
   const pausedMs  = calcTotalPausedMs(work.pauseSegments || []);
   return Math.max(0, Math.floor((elapsedMs - pausedMs) / 60000));
 }
 
-/**
- * Returns total break minutes from pauseSegments.
- */
 function calcBreakMinutes(work) {
   return Math.floor(calcTotalPausedMs(work.pauseSegments || []) / 60000);
 }
 
-// ── Settings (localStorage) ───────────────────────────────
+// ══════════════════════════════════════════════════════════
+// SETTINGS  (localStorage)
+// ══════════════════════════════════════════════════════════
 const Settings = {
   get: key => {
     const s        = JSON.parse(localStorage.getItem('jcb_settings') || '{}');
-    const defaults = { hourlyRate: 1300, darkMode: false, language: 'English', ownerName: '', ownerMobile: '' };
+    const defaults = { hourlyRate: 1300, darkMode: false, ownerName: '', ownerMobile: '' };
     return key ? (s[key] !== undefined ? s[key] : defaults[key]) : { ...defaults, ...s };
   },
   set: (key, val) => {
@@ -273,7 +402,9 @@ const Settings = {
   },
 };
 
-// ── Auth (localStorage) ───────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// AUTH  (localStorage)
+// ══════════════════════════════════════════════════════════
 const Auth = {
   isLoggedIn: () => !!localStorage.getItem('jcb_user'),
   login:      (name, mobile) => localStorage.setItem('jcb_user', JSON.stringify({ name, mobile })),
@@ -281,7 +412,9 @@ const Auth = {
   logout:     () => localStorage.removeItem('jcb_user'),
 };
 
-// ── Format Helpers ────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// FORMAT HELPERS
+// ══════════════════════════════════════════════════════════
 function fmtCurrency(amount) {
   return '₹' + Math.round(amount).toLocaleString('en-IN');
 }
@@ -313,3 +446,7 @@ function payBadgeClass(status) {
   return 'pay-partial';
 }
 function calcAmount(minutes, rate) { return Math.round((minutes / 60) * rate); }
+function vIcon(type) {
+  const m = { Tractor: '🚜', Lorry: '🚛', Truck: '🚚', Other: '🚐' };
+  return m[type] || '🚗';
+}
