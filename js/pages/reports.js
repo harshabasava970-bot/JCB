@@ -67,10 +67,10 @@ const ReportsPage = {
     let year = now.getFullYear(), month = now.getMonth() + 1;
 
     const build = async () => {
-      const from = `${year}-${String(month).padStart(2,'0')}-01`;
+      const from    = `${year}-${String(month).padStart(2,'0')}-01`;
       const lastDay = new Date(year, month, 0).getDate();
-      const to = `${year}-${String(month).padStart(2,'0')}-${lastDay}`;
-      const stats = await getReportStats(from, to);
+      const to      = `${year}-${String(month).padStart(2,'0')}-${lastDay}`;
+      const stats   = await getReportStats(from, to);
       const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       content.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1.5px solid rgba(249,196,0,.4);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px">
@@ -98,7 +98,7 @@ const ReportsPage = {
     let year = new Date().getFullYear();
 
     const build = async () => {
-      const stats = await getReportStats(`${year}-01-01`, `${year}-12-31`);
+      const stats     = await getReportStats(`${year}-01-01`, `${year}-12-31`);
       const chartData = await getMonthlyChartData(year);
       content.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1.5px solid rgba(249,196,0,.4);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px">
@@ -140,7 +140,8 @@ const ReportsPage = {
             },
             options: {
               responsive: true,
-              plugins: { legend: { display: false },
+              plugins: {
+                legend: { display: false },
                 tooltip: { callbacks: { label: ctx => fmtCurrency(ctx.parsed.y) } }
               },
               scales: {
@@ -169,7 +170,8 @@ const ReportsPage = {
     if (stats.totalJobs === 0) {
       return `<div class="empty-state"><span class="material-icons-round">bar_chart</span>No data for ${label}</div>`;
     }
-    const hrs = Math.floor(stats.totalMinutes / 60), mins = stats.totalMinutes % 60;
+    const hrs  = Math.floor(stats.totalMinutes / 60);
+    const mins = stats.totalMinutes % 60;
     return `
 <div style="background:linear-gradient(135deg,var(--secondary),#2d2d2d);border-radius:18px;padding:20px;margin-bottom:16px">
   <div style="color:rgba(255,255,255,.55);font-size:12px;margin-bottom:4px">Total Earnings</div>
@@ -192,7 +194,7 @@ const ReportsPage = {
     <div class="stat-label">Total Hours</div>
   </div>
 </div>
-<div class="card-grid">
+<div class="card-grid mb-12">
   <div class="stat-card">
     <div class="stat-icon" style="background:rgba(255,152,0,.12)">
       <span class="material-icons-round" style="color:#ff9800">local_gas_station</span>
@@ -207,6 +209,16 @@ const ReportsPage = {
     <div class="stat-value" style="font-size:15px">${fmtCurrency(stats.totalProfit)}</div>
     <div class="stat-label">Total Profit</div>
   </div>
-</div>`;
+</div>
+${stats.totalTrips > 0 ? `
+<div class="stat-card" style="display:flex;align-items:center;gap:14px;padding:16px">
+  <div class="stat-icon" style="background:rgba(249,196,0,.12);margin-bottom:0;flex-shrink:0">
+    <span style="font-size:20px">📦</span>
+  </div>
+  <div>
+    <div class="stat-value" style="font-size:22px">${stats.totalTrips}</div>
+    <div class="stat-label">Total Loading Trips</div>
+  </div>
+</div>` : ''}`;
   }
 };
