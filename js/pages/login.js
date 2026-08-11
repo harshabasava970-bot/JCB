@@ -29,7 +29,7 @@ const LoginPage = {
     <button class="btn btn-primary mt-24" id="login-btn" style="height:56px;font-size:17px;">
       <span class="material-icons-round">arrow_forward</span> Continue
     </button>
-    <p style="text-align:center;font-size:12px;color:var(--text2);margin-top:20px;">Version 1.0.0 • Offline App</p>
+    <p style="text-align:center;font-size:12px;color:var(--text2);margin-top:20px;">Version 2.0.0 • Offline App</p>
   </div>
 </div>`;
 
@@ -38,7 +38,7 @@ const LoginPage = {
     });
 
     document.getElementById('login-btn').addEventListener('click', () => {
-      const name = document.getElementById('login-name').value.trim();
+      const name   = document.getElementById('login-name').value.trim();
       const mobile = document.getElementById('login-mobile').value.trim();
       let ok = true;
       if (!name) { document.getElementById('err-name').style.display = 'block'; ok = false; }
