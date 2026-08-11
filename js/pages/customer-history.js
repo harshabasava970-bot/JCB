@@ -4,15 +4,15 @@ const CustomerHistoryPage = {
     const name    = params.name    || '';
     const village = params.village || '';
     container.innerHTML = `<div class="page"><div class="appbar">
-      <button class="appbar-back" onclick="history.go(-1)||App.navigate('history')">
+      <button class="appbar-back" onclick="App.navigate('history')">
         <span class="material-icons-round">arrow_back_ios_new</span>
       </button>
       <h1>${name}</h1>
     </div><div class="spinner"></div></div>`;
 
-    const works = await getWorksByCustomer(name, village);
+    const works       = await getWorksByCustomer(name, village);
     const totalAmount = works.reduce((s, w) => s + w.amount, 0);
-    const lastDate = works.length ? fmtDate(works[0].date) : '-';
+    const lastDate    = works.length ? fmtDate(works[0].date) : '-';
 
     container.innerHTML = `
 <div class="page">
