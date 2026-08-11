@@ -1,20 +1,13 @@
 // ── Work Detail Page ──────────────────────────────────────
 const DetailPage = {
-  isEditing: false,
-
   render(container, work) {
     if (!work) { App.navigate('history'); return; }
-    DetailPage.isEditing = false;
     DetailPage._work = work;
     DetailPage._renderView(container, work);
   },
 
   _renderView(container, work) {
-    const breakMins  = work.breakMinutes || 0;
-    const loading    = Array.isArray(work.loading) ? work.loading : [];
-    const totalTrips = loading.reduce((s, v) => s + (v.trips || 0), 0);
-
-    const vehicleIcon = t => ({ Tractor:'🚜', Lorry:'🚛', Truck:'🚚' }[t] || '🚐');
+    const breakMins = work.breakMinutes || 0;
 
     container.innerHTML = `
 <div class="page">
@@ -32,7 +25,6 @@ const DetailPage = {
   </div>
 
   <div class="p-20">
-
     <!-- Customer Header -->
     <div style="background:rgba(249,196,0,.1);border:1.5px solid rgba(249,196,0,.3);border-radius:18px;padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:16px">
       <div style="width:56px;height:56px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:var(--secondary);flex-shrink:0">
@@ -53,11 +45,11 @@ const DetailPage = {
 
     <!-- Amount Card -->
     <div class="amount-card mb-16">
-      <div class="amount-label">Total Amount</div>
+      <div class="amount-label">Total Work Amount</div>
       <div class="amount-value">${fmtCurrency(work.amount)}</div>
       <div class="amount-sub">${fmtDuration(work.workingMinutes)} × ₹${work.hourlyRate}/hr</div>
       <div style="margin-top:10px">
-        <span style="position:relative;display:inline-block;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;color:${payColor(work.paymentStatus)};border:1.5px solid ${payColor(work.paymentStatus)}">
+        <span style="display:inline-block;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;color:${payColor(work.paymentStatus)};border:1.5px solid ${payColor(work.paymentStatus)}">
           ${work.paymentStatus}
         </span>
       </div>
@@ -94,44 +86,12 @@ const DetailPage = {
         </div>
         <span style="font-size:14px;font-weight:700">Payment</span>
       </div>
-      <div class="detail-row"><span class="detail-label">Amount</span><span class="detail-value">${fmtCurrency(work.amount)}</span></div>
+      <div class="detail-row"><span class="detail-label">Work Amount</span><span class="detail-value">${fmtCurrency(work.amount)}</span></div>
       <div class="detail-row"><span class="detail-label">Diesel Expense</span><span class="detail-value">${fmtCurrency(work.dieselExpense || 0)}</span></div>
       <div class="detail-row"><span class="detail-label">Net Profit</span><span class="detail-value" style="color:#4caf50">${fmtCurrency(work.profit || 0)}</span></div>
       <div class="detail-row"><span class="detail-label">Advance Paid</span><span class="detail-value">${fmtCurrency(work.advanceAmount || 0)}</span></div>
       <div class="detail-row"><span class="detail-label">Balance Due</span><span class="detail-value" style="color:#f44336">${fmtCurrency(work.balanceAmount || 0)}</span></div>
     </div>
-
-    ${loading.length ? `
-    <!-- Loading / Trips -->
-    <div class="card mb-12">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <div style="width:30px;height:30px;border-radius:8px;background:rgba(249,196,0,.15);display:flex;align-items:center;justify-content:center;font-size:16px">📦</div>
-        <span style="font-size:14px;font-weight:700">Loading / Trips</span>
-      </div>
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead>
-            <tr style="color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.5px">
-              <th style="text-align:left;padding:6px 4px">Vehicle</th>
-              <th style="text-align:left;padding:6px 4px">Type</th>
-              <th style="text-align:right;padding:6px 4px">Trips</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${loading.map(v => `
-            <tr style="border-top:1px solid var(--border)">
-              <td style="padding:8px 4px;font-weight:600">${v.vehicleNumber}</td>
-              <td style="padding:8px 4px;color:var(--text2)">${vehicleIcon(v.vehicleType)} ${v.vehicleType}</td>
-              <td style="padding:8px 4px;text-align:right;font-weight:700">${v.trips}</td>
-            </tr>`).join('')}
-            <tr style="border-top:2px solid var(--border);font-weight:700">
-              <td colspan="2" style="padding:8px 4px">Total</td>
-              <td style="padding:8px 4px;text-align:right;color:var(--primary);font-size:15px">${totalTrips}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>` : ''}
 
     ${work.notes ? `
     <div class="card mb-12">
@@ -144,7 +104,7 @@ const DetailPage = {
       <p style="font-size:14px;color:var(--text2)">${work.notes}</p>
     </div>` : ''}
 
-    <!-- Action Buttons -->
+    <!-- Actions -->
     <div class="row mt-16 mb-16">
       <button class="btn btn-outline" id="det-pdf-btn" style="border-color:#f44336;color:#f44336">
         <span class="material-icons-round" style="font-size:18px">picture_as_pdf</span> PDF
@@ -154,9 +114,7 @@ const DetailPage = {
       </button>
     </div>
 
-    <p style="text-align:center;font-size:11px;color:var(--text2)">
-      Created: ${fmtDate(work.createdAt)}
-    </p>
+    <p style="text-align:center;font-size:11px;color:var(--text2)">Created: ${fmtDate(work.createdAt)}</p>
     <div style="height:20px"></div>
   </div>
 </div>`;
@@ -169,39 +127,11 @@ const DetailPage = {
       App.showToast('Work deleted', 'success');
       App.navigate('history');
     };
-    document.getElementById('det-pdf-btn').onclick = () => PdfService.generate(work);
-    document.getElementById('det-wa-btn').onclick  = () => ShareService.whatsapp(work);
+    document.getElementById('det-pdf-btn').onclick = () => PdfService.generateWork(work);
+    document.getElementById('det-wa-btn').onclick  = () => ShareService.whatsappWork(work);
   },
 
   _renderEdit(container, work) {
-    const loading    = Array.isArray(work.loading) ? JSON.parse(JSON.stringify(work.loading)) : [];
-    const vehicleIcon = t => ({ Tractor:'🚜', Lorry:'🚛', Truck:'🚚' }[t] || '🚐');
-
-    const renderTripEditor = () => {
-      const el = document.getElementById('edit-trip-list');
-      if (!el) return;
-      if (!loading.length) {
-        el.innerHTML = `<div style="font-size:13px;color:var(--text2);padding:8px 0">No loading data</div>`;
-        return;
-      }
-      el.innerHTML = loading.map((v, idx) => `
-<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
-  <div style="flex:1;font-size:13px;font-weight:600">${vehicleIcon(v.vehicleType)} ${v.vehicleType} — ${v.vehicleNumber}</div>
-  <button class="et-minus" data-idx="${idx}" style="width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
-  <span style="min-width:28px;text-align:center;font-weight:700">${v.trips}</span>
-  <button class="et-plus" data-idx="${idx}" style="width:36px;height:36px;border-radius:10px;background:var(--primary);border:none;color:var(--secondary);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
-</div>`).join('');
-
-      el.querySelectorAll('.et-plus, .et-minus').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const idx = parseInt(btn.dataset.idx);
-          if (btn.classList.contains('et-plus'))  loading[idx].trips += 1;
-          if (btn.classList.contains('et-minus')) loading[idx].trips = Math.max(0, loading[idx].trips - 1);
-          renderTripEditor();
-        });
-      });
-    };
-
     container.innerHTML = `
 <div class="page">
   <div class="appbar">
@@ -250,13 +180,6 @@ const DetailPage = {
         <button class="pay-chip partial ${work.paymentStatus==='Partially Paid'?'active':''}" data-status="Partially Paid">Partially Paid</button>
       </div>
     </div>
-
-    ${loading.length ? `
-    <div class="form-group">
-      <label>Loading / Trip Counts</label>
-      <div id="edit-trip-list"></div>
-    </div>` : ''}
-
     <div class="form-group">
       <label>Notes</label>
       <textarea id="e-notes" class="form-control">${work.notes || ''}</textarea>
@@ -268,20 +191,18 @@ const DetailPage = {
   </div>
 </div>`;
 
-    if (loading.length) renderTripEditor();
-
     let payStatus = work.paymentStatus;
     document.getElementById('e-pay-chips').addEventListener('click', e => {
       const chip = e.target.closest('.pay-chip');
       if (!chip) return;
       payStatus = chip.dataset.status;
-      document.querySelectorAll('.pay-chip').forEach(c => c.classList.toggle('active', c.dataset.status === payStatus));
+      document.querySelectorAll('.pay-chip').forEach(c =>
+        c.classList.toggle('active', c.dataset.status === payStatus)
+      );
     });
-
     document.getElementById('edit-back').onclick    = () => DetailPage._renderView(container, work);
     document.getElementById('edit-discard').onclick = () => DetailPage._renderView(container, work);
-
-    document.getElementById('edit-save').onclick = async () => {
+    document.getElementById('edit-save').onclick    = async () => {
       const diesel  = parseFloat(document.getElementById('e-diesel').value)  || 0;
       const advance = parseFloat(document.getElementById('e-advance').value) || 0;
       const updated = {
@@ -295,7 +216,6 @@ const DetailPage = {
         balanceAmount: Math.max(0, work.amount - advance),
         paymentStatus: payStatus,
         notes:         document.getElementById('e-notes').value.trim() || null,
-        loading,   // updated trip counts
       };
       const btn = document.getElementById('edit-save');
       btn.disabled = true;
