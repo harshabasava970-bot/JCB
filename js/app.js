@@ -3,10 +3,8 @@ const App = {
   currentPage: null,
 
   async init() {
-    // Apply dark mode
     if (Settings.get('darkMode')) document.body.classList.add('dark');
 
-    // Wire bottom nav
     document.querySelectorAll('.nav-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const page = btn.dataset.page;
@@ -14,7 +12,6 @@ const App = {
       });
     });
 
-    // Wire confirm dialog buttons
     document.getElementById('confirm-cancel').addEventListener('click', () => {
       document.getElementById('confirm-overlay').classList.add('hidden');
       if (App._confirmReject) App._confirmReject(false);
@@ -24,13 +21,11 @@ const App = {
       if (App._confirmResolve) App._confirmResolve(true);
     });
 
-    // Check login
     if (!Auth.isLoggedIn()) {
       App.navigate('login');
       return;
     }
 
-    // Check active work (running OR paused)
     const active = await getActiveWork();
     if (active) {
       App.navigate('running', { work: active });
@@ -40,7 +35,6 @@ const App = {
   },
 
   navigate(page, params = {}) {
-    // Stop the running page clock if leaving that page
     if (App.currentPage === 'running' && page !== 'running') {
       if (RunningPage && RunningPage._stopClock) RunningPage._stopClock();
     }
@@ -56,23 +50,26 @@ const App = {
       if (Auth.isLoggedIn()) nav.classList.remove('hidden');
     }
 
-    // Update active nav button
     document.querySelectorAll('.nav-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.page === page);
+      const active = b.dataset.page === page ||
+        (b.dataset.page === 'loading' && page === 'loading') ||
+        (b.dataset.page === 'history' && page === 'detail') ||
+        (b.dataset.page === 'history' && page === 'customer-history');
+      b.classList.toggle('active', active);
     });
 
-    // Render page
     const pages = {
-      login:             () => LoginPage.render(container),
-      home:              () => HomePage.render(container),
-      'start-work':      () => StartWorkPage.render(container),
-      running:           () => RunningPage.render(container, params.work),
-      'end-work':        () => EndWorkPage.render(container, params.work),
-      history:           () => HistoryPage.render(container),
-      detail:            () => DetailPage.render(container, params.work),
-      reports:           () => ReportsPage.render(container),
-      settings:          () => SettingsPage.render(container),
-      'customer-history':() => CustomerHistoryPage.render(container, params),
+      login:              () => LoginPage.render(container),
+      home:               () => HomePage.render(container),
+      'start-work':       () => StartWorkPage.render(container),
+      running:            () => RunningPage.render(container, params.work),
+      'end-work':         () => EndWorkPage.render(container, params.work),
+      history:            () => HistoryPage.render(container),
+      detail:             () => DetailPage.render(container, params.work),
+      loading:            () => LoadingPage.render(container, params),
+      reports:            () => ReportsPage.render(container),
+      settings:           () => SettingsPage.render(container),
+      'customer-history': () => CustomerHistoryPage.render(container, params),
     };
 
     if (pages[page]) {
@@ -104,5 +101,4 @@ const App = {
   },
 };
 
-// Start app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => App.init());
