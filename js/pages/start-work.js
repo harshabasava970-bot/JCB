@@ -56,7 +56,7 @@ const StartWorkPage = {
       if (e.target.value.length === 10) {
         const c = await getCustomerByMobile(e.target.value);
         if (c) {
-          document.getElementById('sw-name').value = c.name;
+          document.getElementById('sw-name').value    = c.name;
           document.getElementById('sw-village').value = c.village;
         }
       }
@@ -64,7 +64,7 @@ const StartWorkPage = {
 
     // Name suggestions
     document.getElementById('sw-name').addEventListener('input', async e => {
-      const q = e.target.value.trim();
+      const q   = e.target.value.trim();
       const sug = document.getElementById('sw-suggestions');
       if (q.length < 2) { sug.classList.add('hidden'); return; }
       const customers = await searchCustomers(q);
@@ -77,9 +77,9 @@ const StartWorkPage = {
       sug.classList.remove('hidden');
       sug.querySelectorAll('.suggestion-item').forEach(el => {
         el.addEventListener('click', () => {
-          document.getElementById('sw-name').value = el.dataset.name;
+          document.getElementById('sw-name').value    = el.dataset.name;
           document.getElementById('sw-village').value = el.dataset.village;
-          document.getElementById('sw-mobile').value = el.dataset.mobile;
+          document.getElementById('sw-mobile').value  = el.dataset.mobile;
           sug.classList.add('hidden');
         });
       });
@@ -87,42 +87,47 @@ const StartWorkPage = {
 
     document.addEventListener('click', e => {
       if (!e.target.closest('#sw-name') && !e.target.closest('#sw-suggestions')) {
-        document.getElementById('sw-suggestions').classList.add('hidden');
+        const s = document.getElementById('sw-suggestions');
+        if (s) s.classList.add('hidden');
       }
-    }, { once: false });
+    });
 
     document.getElementById('sw-start-btn').addEventListener('click', async () => {
-      const name   = document.getElementById('sw-name').value.trim();
+      const name    = document.getElementById('sw-name').value.trim();
       const village = document.getElementById('sw-village').value.trim();
       let ok = true;
-      if (!name)    { document.getElementById('err-sw-name').style.display='block'; ok=false; }
-      else document.getElementById('err-sw-name').style.display='none';
-      if (!village) { document.getElementById('err-sw-village').style.display='block'; ok=false; }
-      else document.getElementById('err-sw-village').style.display='none';
+      if (!name)    { document.getElementById('err-sw-name').style.display = 'block'; ok = false; }
+      else            document.getElementById('err-sw-name').style.display = 'none';
+      if (!village) { document.getElementById('err-sw-village').style.display = 'block'; ok = false; }
+      else            document.getElementById('err-sw-village').style.display = 'none';
       if (!ok) return;
 
       const btn = document.getElementById('sw-start-btn');
-      btn.disabled = true; btn.innerHTML = '<div class="spinner" style="margin:0;width:24px;height:24px;border-width:2px"></div>';
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner" style="margin:0;width:24px;height:24px;border-width:2px"></div>';
 
-      const now = new Date();
+      const now  = new Date();
       const work = {
-        customerName: name,
+        customerName:  name,
         village,
-        mobileNumber: document.getElementById('sw-mobile').value.trim(),
-        date: now.toISOString().slice(0, 10),
-        startTime: now.toISOString(),
-        endTime: null,
+        mobileNumber:  document.getElementById('sw-mobile').value.trim(),
+        date:          now.toISOString().slice(0, 10),
+        startTime:     now.toISOString(),
+        endTime:       null,
         workingMinutes: 0,
-        hourlyRate: Settings.get('hourlyRate'),
+        breakMinutes:  0,
+        pauseSegments: [],   // v2: track pauses
+        loading:       [],   // v2: track trips
+        hourlyRate:    Settings.get('hourlyRate'),
         amount: 0, dieselExpense: 0, profit: 0,
         paymentStatus: 'Pending',
         advanceAmount: 0, balanceAmount: 0,
-        status: 'running',
-        notes: document.getElementById('sw-notes').value.trim() || null,
-        createdAt: now.toISOString(),
+        status:        'running',
+        notes:         document.getElementById('sw-notes').value.trim() || null,
+        createdAt:     now.toISOString(),
       };
       const id = await addWork(work);
-      work.id = id;
+      work.id  = id;
       App.navigate('running', { work });
     });
   }
