@@ -29,7 +29,7 @@ const HistoryPage = {
 </div>`;
 
     HistoryPage.currentFilter = 'All';
-    HistoryPage.searchQuery = '';
+    HistoryPage.searchQuery   = '';
     await HistoryPage.loadList();
 
     document.getElementById('hist-search').addEventListener('input', async e => {
@@ -57,10 +57,10 @@ const HistoryPage = {
 
   async loadList() {
     const works = await getCompletedWorks({
-      search: HistoryPage.searchQuery,
+      search:  HistoryPage.searchQuery,
       payment: HistoryPage.currentFilter,
     });
-    const list = document.getElementById('hist-list');
+    const list    = document.getElementById('hist-list');
     const countEl = document.getElementById('hist-count');
     if (countEl) countEl.textContent = `${works.length} records`;
 
