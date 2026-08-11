@@ -188,3 +188,9 @@ textarea.form-control{resize:vertical;min-height:80px;}
   #page-container{max-width:480px;margin:0 auto;}
   .bottom-nav{max-width:480px;left:50%;transform:translateX(-50%);right:auto;}
 }
+
+/* ── Loading Module Styles ──────────────────────────────── */
+.loading-vehicle-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);}
+.trip-btn{transition:transform .1s,opacity .1s;-webkit-tap-highlight-color:transparent;}
+.trip-btn:active{transform:scale(.92);opacity:.8;}
+.module-toggle-btn{font-family:'Roboto',sans-serif;transition:all .2s;}
