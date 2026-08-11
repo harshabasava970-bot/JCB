@@ -1,7 +1,7 @@
 const HomePage = {
   async render(container) {
     container.innerHTML = `<div class="page"><div class="spinner"></div></div>`;
-    const user = Auth.getUser() || {};
+    const user  = Auth.getUser() || {};
     const stats = await getDashboardStats();
     container.innerHTML = `
 <div class="page">
