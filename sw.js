@@ -1,5 +1,5 @@
-// JCB Working - Service Worker v2 (with Pause/Resume + Loading)
-const CACHE = 'jcb-working-v2';
+// JCB Working - Service Worker v3 (separate Loading module)
+const CACHE = 'jcb-working-v3';
 const ASSETS = [
   '/JCB/',
   '/JCB/index.html',
@@ -15,20 +15,17 @@ const ASSETS = [
   '/JCB/js/pages/end-work.js',
   '/JCB/js/pages/history.js',
   '/JCB/js/pages/detail.js',
+  '/JCB/js/pages/loading.js',
   '/JCB/js/pages/reports.js',
   '/JCB/js/pages/settings.js',
   '/JCB/js/pages/customer-history.js',
 ];
 
-// Install — cache all assets
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS))
-  );
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
   self.skipWaiting();
 });
 
-// Activate — remove old caches
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -38,17 +35,16 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Fetch — serve from cache, fall back to network
 self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
-      return fetch(e.request).then(response => {
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE).then(cache => cache.put(e.request, clone));
+      return fetch(e.request).then(res => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
         }
-        return response;
+        return res;
       }).catch(() => caches.match('/JCB/index.html'));
     })
   );
