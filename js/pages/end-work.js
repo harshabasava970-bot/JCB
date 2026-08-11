@@ -3,14 +3,7 @@ const EndWorkPage = {
   render(container, work) {
     if (!work) { App.navigate('home'); return; }
     let diesel = 0, advance = 0, payStatus = 'Pending';
-
-    const breakMins   = work.breakMinutes || 0;
-    const loadingRows = Array.isArray(work.loading) && work.loading.length
-      ? work.loading
-      : null;
-    const totalTrips  = loadingRows
-      ? loadingRows.reduce((s, v) => s + (v.trips || 0), 0)
-      : 0;
+    const breakMins = work.breakMinutes || 0;
 
     container.innerHTML = `
 <div class="page">
@@ -41,28 +34,10 @@ const EndWorkPage = {
 
     <!-- Amount -->
     <div class="amount-card mb-16">
-      <div class="amount-label">Total Amount</div>
+      <div class="amount-label">Total Work Amount</div>
       <div class="amount-value">${fmtCurrency(work.amount)}</div>
       <div class="amount-sub">${work.workingMinutes}m ÷ 60 × ₹${work.hourlyRate}</div>
     </div>
-
-    ${loadingRows ? `
-    <!-- Loading Summary -->
-    <div class="card mb-16">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <div style="width:30px;height:30px;border-radius:8px;background:rgba(249,196,0,.15);display:flex;align-items:center;justify-content:center;font-size:16px">📦</div>
-        <span style="font-size:14px;font-weight:700">Loading / Trips</span>
-      </div>
-      ${loadingRows.map(v => `
-      <div class="detail-row">
-        <span class="detail-label">${RunningPage._vehicleIcon ? RunningPage._vehicleIcon(v.vehicleType) : ''} ${v.vehicleType} — ${v.vehicleNumber}</span>
-        <span class="detail-value">${v.trips} trips</span>
-      </div>`).join('')}
-      <div class="detail-row" style="margin-top:4px">
-        <span class="detail-label" style="font-weight:700">Total Trips</span>
-        <span class="detail-value" style="font-weight:700;color:var(--primary)">${totalTrips}</span>
-      </div>
-    </div>` : ''}
 
     <!-- Diesel -->
     <div class="section-hdr">Diesel Expense (Optional)</div>
@@ -79,7 +54,7 @@ const EndWorkPage = {
       </div>
     </div>
 
-    <!-- Payment -->
+    <!-- Payment Status -->
     <div class="section-hdr">Payment Status</div>
     <div class="pay-chips mb-16" id="pay-chips">
       <button class="pay-chip pending active" data-status="Pending">Pending</button>
@@ -95,7 +70,7 @@ const EndWorkPage = {
       </div>
     </div>
 
-    <div class="card mb-16" id="ew-balance-card">
+    <div class="card mb-16">
       <div class="detail-row">
         <span class="detail-label" style="font-weight:600">Balance Due</span>
         <span class="detail-value text-error" id="ew-balance-val">${fmtCurrency(work.amount)}</span>
@@ -103,15 +78,15 @@ const EndWorkPage = {
     </div>
 
     <button class="btn btn-primary" id="ew-save" style="height:60px;font-size:18px;border-radius:16px;">
-      <span class="material-icons-round">check_circle</span> SAVE RECORD
+      <span class="material-icons-round">check_circle</span> SAVE WORK RECORD
     </button>
     <div style="height:20px"></div>
   </div>
 </div>`;
 
-    // Diesel input
+    // Diesel
     document.getElementById('ew-diesel').addEventListener('input', e => {
-      diesel = parseFloat(e.target.value) || 0;
+      diesel       = parseFloat(e.target.value) || 0;
       const profit = work.amount - diesel;
       const row    = document.getElementById('ew-profit-row');
       if (diesel > 0) {
@@ -122,12 +97,12 @@ const EndWorkPage = {
       }
     });
 
-    // Advance input
+    // Advance
     document.getElementById('ew-advance').addEventListener('input', e => {
-      advance = parseFloat(e.target.value) || 0;
-      const balance = Math.max(0, work.amount - advance);
+      advance         = parseFloat(e.target.value) || 0;
+      const balance   = Math.max(0, work.amount - advance);
       document.getElementById('ew-balance-val').textContent = fmtCurrency(balance);
-      if (advance <= 0)               payStatus = 'Pending';
+      if (advance <= 0)                payStatus = 'Pending';
       else if (advance >= work.amount) payStatus = 'Paid';
       else                             payStatus = 'Partially Paid';
       setPayChip(payStatus);
@@ -151,12 +126,12 @@ const EndWorkPage = {
     });
 
     function setPayChip(status) {
-      document.querySelectorAll('.pay-chip').forEach(c => {
-        c.classList.toggle('active', c.dataset.status === status);
-      });
+      document.querySelectorAll('.pay-chip').forEach(c =>
+        c.classList.toggle('active', c.dataset.status === status)
+      );
     }
 
-    // Cancel — deletes the work record
+    // Cancel
     document.getElementById('ew-cancel').addEventListener('click', async () => {
       const ok = await App.confirm('Cancel Work?', 'This will delete the current work record.', 'Delete', true);
       if (!ok) return;
@@ -166,8 +141,8 @@ const EndWorkPage = {
 
     // Save
     document.getElementById('ew-save').addEventListener('click', async () => {
-      const btn     = document.getElementById('ew-save');
-      btn.disabled  = true;
+      const btn    = document.getElementById('ew-save');
+      btn.disabled = true;
       const balance = Math.max(0, work.amount - advance);
 
       const finalWork = {
@@ -178,7 +153,6 @@ const EndWorkPage = {
         advanceAmount: advance,
         balanceAmount: balance,
         status:        'completed',
-        // loading + pauseSegments already on work object
       };
       await updateWork(finalWork);
       await upsertCustomer(finalWork);
